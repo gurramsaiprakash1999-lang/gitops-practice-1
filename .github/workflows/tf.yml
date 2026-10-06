@@ -65,4 +65,12 @@ jobs:
 
       - name: Terraform Destroy
         if: github.event.inputs.action == 'destroy'
-        run: terraform destroy -auto-approve -input=false
+        run: |
+          # 1. Dynamically read the bucket name from s3.tf
+          BUCKET_NAME=$(grep -oE 'bucket\s*=\s*"[^"]+"' s3.tf | cut -d'"' -f2)
+          echo "Found bucket to delete: $BUCKET_NAME"
+  
+          # 2. Delete the bucket completely from AWS
+          if [ -n "$BUCKET_NAME" ]; then
+            aws s3 rb "s3://$BUCKET_NAME" --force
+          fi
